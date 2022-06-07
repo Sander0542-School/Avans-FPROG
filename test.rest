@@ -1,0 +1,25 @@
+# -*- restclient -*-
+
+# Get all pinneries
+GET http://localhost:5000
+
+# Get pinnery
+GET http://localhost:5000/Pingum
+
+# Get pinnery's pins
+GET http://localhost:5000/Pingum/pin
+
+# Get value of a single pin
+GET http://localhost:5000/Pingum/pin/PG1/value
+
+# Update value of pin
+PUT http://localhost:5000/Pingum/pin/PG1/value
+Content-Type: application/json
+
+"12"
+
+# Add pin
+POST http://localhost:5000/Pingum/pin
+Content-Type: application/json
+
+{"name":"TestPin","value":"1337"}
