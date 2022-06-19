@@ -66,8 +66,7 @@ let addPinTo (pinneryName: string) : HttpHandler =
                     |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
 
                 match (validatePin otherPins pin) with
-                | Error errors ->
-                    return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
+                | Error errors -> return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
                 | Ok validPin ->
                     InMemoryDatabase.insert validPin.Name (validPin.Name, validPin.Value, pinneryName) store.pins
                     |> ignore

@@ -19,9 +19,10 @@ type Validator =
             Ok item
         else
             errors
-            |> Seq.map (fun result -> match result with
-                        | Error(ValidationError message) -> message
-                        | _ -> String.Empty)
+            |> Seq.map (fun result ->
+                match result with
+                | Error (ValidationError message) -> message
+                | _ -> String.Empty)
             |> Seq.filter (fun str -> (not (String.IsNullOrWhiteSpace str)))
             |> Error
 
