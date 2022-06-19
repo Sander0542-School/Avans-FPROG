@@ -3,7 +3,7 @@
 type User =
     { Username: string
       Password: string
-      FavoritePinnery: Pinnery }
+      Pinnery: Option<string> }
 
 module User =
     let hashPassword (_: string) = "secured!"

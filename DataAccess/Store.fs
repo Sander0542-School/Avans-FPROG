@@ -20,9 +20,9 @@ type Store() =
         |> Seq.map (fun (name, value, pinnery) -> name, (name, value, pinnery))
         |> InMemoryDatabase.ofSeq
 
-    member val users: InMemoryDatabase<string, string * string * string> =
-        [ "sander", User.hashPassword "Password12", ""
-          "jeroen", User.hashPassword "Password34", "Pingum"
-          "martijn", User.hashPassword "Password56", "LaBroche" ]
+    member val users: InMemoryDatabase<string, string * string * Option<string>> =
+        [ "sander", User.hashPassword "Password12", None
+          "jeroen", User.hashPassword "Password34", Some "Pingum"
+          "martijn", User.hashPassword "Password56", Some "LaBroche" ]
         |> Seq.map (fun (username, password, favPinnery) -> username, (username, password, favPinnery))
         |> InMemoryDatabase.ofSeq
