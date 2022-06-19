@@ -26,3 +26,14 @@ let decodePinnery: Decoder<Pinnery> =
         { Name = get.Required.Field "name" Decode.string
           Location = get.Required.Field "value" Decode.string
           Pins = get.Required.Field "pins" (Decode.list decodePin) })
+
+let encodeUser: Encoder<User> =
+    fun user ->
+        Encode.object ["username", Encode.string user.Username
+                       "pinnery", Encode.option Encode.string user.Pinnery ]
+
+let decodeUser: Decoder<User> =
+    Decode.object (fun get ->
+        { Username = get.Required.Field "username" Decode.string
+          Password = get.Required.Field "password" Decode.string
+          Pinnery = get.Optional.Field "pinnery" Decode.string })
