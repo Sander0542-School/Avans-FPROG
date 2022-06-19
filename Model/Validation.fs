@@ -58,11 +58,11 @@ module PinValidation =
 
     let validateUniqueName (pins: seq<Pin>) (pin: Pin) : Result<Pin, ValidationError> =
         let predicate =
-            fun (pin1: Pin) -> pin1.Name <> pin.Name
+            fun (pin1: Pin) -> pin1.Name = pin.Name
 
         match (Validator.validateListExists predicate pins) with
-        | Error _ -> Error(ValidationError "The name is not unique")
-        | Ok _ -> Ok pin
+        | Error _ -> Ok pin
+        | Ok _ -> Error(ValidationError "The name is not unique")
 
     let validateValueAboveZero (pin: Pin) : Result<Pin, ValidationError> =
         match (Validator.validateGreaterThan 0 pin.Value) with
@@ -85,11 +85,11 @@ module PinneryValidation =
 
     let validateUniqueName (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinnery, ValidationError> =
         let predicate =
-            fun (pinnery1: Pinnery) -> pinnery.Name <> pinnery1.Name
+            fun (pinnery1: Pinnery) -> pinnery.Name = pinnery1.Name
 
         match (Validator.validateListExists predicate pinneries) with
-        | Error _ -> Error(ValidationError "The name is not unique")
-        | Ok _ -> Ok pinnery
+        | Error _ -> Ok pinnery
+        | Ok _ -> Error(ValidationError "The name is not unique")
 
     let validateLocation (pinnery: Pinnery) : Result<Pinnery, ValidationError> =
         match (Validator.validateListContains pinnery.Location validLocations) with
