@@ -17,7 +17,12 @@ type Validator =
         if Seq.isEmpty errors then
             Ok item
         else
-            Seq.head errors
+            errors
+            |> Seq.map (fun result -> match result with
+                        | Error(ValidationError message) -> message
+                        | _ -> String.Empty)
+            |> Seq.filter (fun str -> (not (String.IsNullOrWhiteSpace str)))
+            |> Error
 
 module Validator =
     let validateGreaterThan (than: decimal) (value: decimal) : Result<decimal, ValidationError> =
@@ -91,7 +96,7 @@ module PinneryValidation =
         | Error _ -> Error(ValidationError $"The {pinnery.Location} location is not valid")
         | Ok _ -> Ok pinnery
 
-let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, ValidationError> =
+let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, seq<string>> =
     Validator.Multiple(
         pin,
         PinValidation.validateNonEmptyName,
@@ -99,7 +104,7 @@ let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, ValidationError> =
         PinValidation.validateValueAboveZero
     )
 
-let validatePinnery (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinnery, ValidationError> =
+let validatePinnery (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinnery, seq<string>> =
     Validator.Multiple(
         pinnery,
         PinneryValidation.validateNonEmptyName,
