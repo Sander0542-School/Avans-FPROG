@@ -19,3 +19,8 @@ type Store() =
           "SuperStifte", 13.37m, "ASG" ]
         |> Seq.map (fun (n, v, p) -> n, (n, v, p))
         |> InMemoryDatabase.ofSeq
+        
+    member val users: InMemoryDatabase<string, string * string * string> =
+        [ "sander", "password", "" ]
+        |> Seq.map (fun (username, password, favPinnery) -> username, (username, password, favPinnery))
+        |> InMemoryDatabase.ofSeq

@@ -9,6 +9,7 @@
       <Compile Include="Pin.fs" />
       <Compile Include="Pinnery.fs" />
       <Compile Include="Validation.fs" />
+      <Compile Include="User.fs" />
     </ItemGroup>
 
 </Project>
