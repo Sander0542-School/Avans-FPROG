@@ -1,6 +1,7 @@
 ﻿module Pinfold.Validation
 
 open System
+open Microsoft.FSharp.Core
 
 type ValidationError = ValidationError of string
 
@@ -47,6 +48,12 @@ module Validator =
             Ok list
         else
             Error(ValidationError "The list does not contain the given item")
+
+    let validateContainsSubstring (str: string) (subStr: string) : Result<string, ValidationError> =
+        if (str.Contains(subStr)) then
+            Ok str
+        else
+            Error(ValidationError $"{str} does not contain {subStr}")
 
     let validateNonEmpty = validateMinLength 0
 
@@ -96,6 +103,64 @@ module PinneryValidation =
         | Error _ -> Error(ValidationError $"The {pinnery.Location} location is not valid")
         | Ok _ -> Ok pinnery
 
+module UserValidation =
+    let illegalWords = [ "nail"; "needle" ]
+
+    let validateNoIllegalWords
+        (func: User -> string)
+        (errorMessage: string)
+        (user: User)
+        : Result<User, ValidationError> =
+        let testStr = func user
+
+        let predicate =
+            fun (str: string) -> testStr.Contains(str)
+
+        match (Validator.validateListExists predicate illegalWords) with
+        | Error _ -> Ok user
+        | Ok _ -> Error(ValidationError errorMessage)
+
+    let validateUsernameNotEmpty (user: User) : Result<User, ValidationError> =
+        match (Validator.validateNonEmpty user.Username) with
+        | Error _ -> Error(ValidationError "The name cannot be empty")
+        | Ok _ -> Ok user
+
+    let validateUsernameNoSpaces (user: User) : Result<User, ValidationError> =
+        match (Validator.validateContainsSubstring user.Username " ") with
+        | Error _ -> Ok user
+        | Ok _ -> Error(ValidationError "The username cannot contains any spaces")
+
+    let validateUsernameNoIllegalWords (user: User) =
+        validateNoIllegalWords (fun (user: User) -> user.Username) "The username cannot contain illegal words" user
+
+    let validateUsernameUnique (users: seq<User>) (user: User) : Result<User, ValidationError> =
+        let predicate =
+            fun (user1: User) -> user.Username = user1.Username
+
+        match (Validator.validateListExists predicate users) with
+        | Error _ -> Ok user
+        | Ok _ -> Error(ValidationError "The username is already used")
+
+    let validatePasswordNoIllegalWords (user: User) =
+        validateNoIllegalWords (fun (user: User) -> user.Password) "The password cannot contain illegal words" user
+
+    let validatePasswordLength (user: User) : Result<User, ValidationError> =
+        match (Validator.validateMinLength 10 user.Password) with
+        | Ok _ -> Ok user
+        | Error _ -> Error(ValidationError "The password needs to be at least 10 characters long")
+
+    let validatePasswordHasDigit (user: User) : Result<User, ValidationError> =
+        if String.forall Char.IsDigit user.Password then
+            Ok user
+        else
+            Error(ValidationError "The password needs to contains a digit")
+
+    let validatePasswordHasLetter (user: User) : Result<User, ValidationError> =
+        if String.forall Char.IsLetter user.Password then
+            Ok user
+        else
+            Error(ValidationError "The password needs to contains a letter")
+
 let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, seq<string>> =
     Validator.Multiple(
         pin,
@@ -110,4 +175,17 @@ let validatePinnery (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinner
         PinneryValidation.validateNonEmptyName,
         (PinneryValidation.validateUniqueName pinneries),
         PinneryValidation.validateLocation
+    )
+
+let validateUser (users: seq<User>) (user: User) : Result<User, seq<string>> =
+    Validator.Multiple(
+        user,
+        UserValidation.validateUsernameNotEmpty,
+        UserValidation.validateUsernameNoSpaces,
+        UserValidation.validateUsernameNoIllegalWords,
+        (UserValidation.validateUsernameUnique users),
+        UserValidation.validatePasswordNoIllegalWords,
+        UserValidation.validatePasswordLength,
+        UserValidation.validatePasswordHasDigit,
+        UserValidation.validatePasswordHasLetter
     )
