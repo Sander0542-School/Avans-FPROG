@@ -137,6 +137,39 @@ let getUsers: HttpHandler =
             return! ThothSerializer.RespondJsonSeq users Serialization.encodeUser next ctx
         }
 
+let addUser: HttpHandler =
+    fun next ctx ->
+        task {
+            let! decodedUser = ThothSerializer.ReadBody ctx Serialization.decodeUser
+
+            match decodedUser with
+            | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
+            | Ok user ->
+                let store = ctx.GetService<Store>()
+
+                let pinneries =
+                    InMemoryDatabase.all store.pinneries
+                    |> Seq.map fst
+
+                let otherUsers =
+                    InMemoryDatabase.filter (fun (username, _, _) -> username = user.Username) store.users
+                    |> Seq.map (fun (username, _, _) ->
+                        { User.Username = username
+                          Password = ""
+                          Pinnery = None })
+
+                match (validateUser otherUsers pinneries user) with
+                | Error errors -> return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
+                | Ok validUser ->
+                    InMemoryDatabase.insert
+                        validUser.Username
+                        (validUser.Username, User.hashPassword validUser.Password, validUser.Pinnery)
+                        store.users
+                    |> ignore
+
+                    return! text "OK" next ctx
+        }
+
 let routes: HttpHandler =
     let pinneryRoutes pinneryName =
         choose [ GET
@@ -149,6 +182,7 @@ let routes: HttpHandler =
 
     let userRoutes =
         choose [ GET >=> getUsers
+                 POST >=> addUser ]
 
     choose [ subRoute "/user" userRoutes
              subRoutef "/%s" pinneryRoutes
