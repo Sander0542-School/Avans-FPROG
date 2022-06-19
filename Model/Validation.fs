@@ -2,6 +2,7 @@
 
 open System
 open Microsoft.FSharp.Core
+open Pinfold
 
 type ValidationError = ValidationError of string
 
@@ -162,6 +163,15 @@ module UserValidation =
             Ok user
         else
             Error(ValidationError "The password needs to contains an uppercase letter")
+            
+    let validatePinneryExists (pinneries: seq<string>) (user: User) : Result<User, ValidationError> =
+        match user.Pinnery with
+        | None -> Ok user
+        | Some pinneryStr ->
+            match Validator.validateListContains pinneryStr pinneries with
+            | Ok _ -> Ok user
+            | Error _ -> Error(ValidationError "The pinnery does not exist")
+        
 
 let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, seq<string>> =
     Validator.Multiple(
@@ -179,7 +189,7 @@ let validatePinnery (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinner
         PinneryValidation.validateLocation
     )
 
-let validateUser (users: seq<User>) (user: User) : Result<User, seq<string>> =
+let validateUser (users: seq<User>) (pinneries: seq<string>) (user: User) : Result<User, seq<string>> =
     Validator.Multiple(
         user,
         UserValidation.validateUsernameNotEmpty,
@@ -189,5 +199,6 @@ let validateUser (users: seq<User>) (user: User) : Result<User, seq<string>> =
         UserValidation.validatePasswordNoIllegalWords,
         UserValidation.validatePasswordLength,
         UserValidation.validatePasswordHasDigit,
-        UserValidation.validatePasswordHasUppercaseLetter
+        UserValidation.validatePasswordHasUppercaseLetter,
+        (UserValidation.validatePinneryExists pinneries)
     )
