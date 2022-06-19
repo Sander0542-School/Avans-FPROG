@@ -122,6 +122,21 @@ let updateValueForPin (pinneryName: string) (pinName: string) : HttpHandler =
                     return! text "OK!" next ctx
         }
 
+let getUsers: HttpHandler =
+    fun next ctx ->
+        task {
+            let store = ctx.GetService<Store>()
+
+            let users =
+                InMemoryDatabase.all store.users
+                |> Seq.map (fun (name, _, pinnery) ->
+                    { Username = name
+                      Password = ""
+                      Pinnery = pinnery })
+
+            return! ThothSerializer.RespondJsonSeq users Serialization.encodeUser next ctx
+        }
+
 let routes: HttpHandler =
     let pinneryRoutes pinneryName =
         choose [ GET
@@ -132,5 +147,9 @@ let routes: HttpHandler =
                  GET >=> subRoute "/pin" (pinsFor pinneryName)
                  GET >=> getPinnery pinneryName ]
 
-    choose [ subRoutef "/%s" pinneryRoutes
+    let userRoutes =
+        choose [ GET >=> getUsers
+
+    choose [ subRoute "/user" userRoutes
+             subRoutef "/%s" pinneryRoutes
              GET >=> getPinneries ]
