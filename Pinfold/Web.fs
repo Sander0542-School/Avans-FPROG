@@ -1,5 +1,6 @@
 module Pinfold.Web
 
+open System
 open Pinfold
 open Pinfold.Database
 open Pinfold.Store
@@ -58,14 +59,22 @@ let addPinTo (pinneryName: string) : HttpHandler =
 
             match decodedPin with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
-            | Ok { Name = name; Value = value } ->
+            | Ok pin ->
                 let store = ctx.GetService<Store>()
 
-                InMemoryDatabase.insert name (name, value, pinneryName) store.pins
-                |> ignore
+                let otherPins =
+                    InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
+                    |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
 
+                match (Pin.validate otherPins pin) with
+                | Error error ->
+                    let (ValidationError errorMessage) = error
+                    return! RequestErrors.BAD_REQUEST errorMessage next ctx
+                | Ok validPin ->
+                    InMemoryDatabase.insert validPin.Name (validPin.Name, validPin.Value, pinneryName) store.pins
+                    |> ignore
 
-                return! text "OK" next ctx
+                    return! text "OK" next ctx
         }
 
 let pinsFor (pinneryName: string) : HttpHandler =
