@@ -24,7 +24,8 @@ type Pinnery =
 module Pinnery =
     let encode: Encoder<Pinnery> =
         fun pinnery ->
-            let pins = pinnery.Pins |> List.map Pin.encode |> Encode.list
+            let pins =
+                pinnery.Pins |> List.map Pin.encode |> Encode.list
 
             Encode.object [ "name", Encode.string pinnery.Name
                             "location", Encode.string pinnery.Location
