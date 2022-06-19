@@ -6,8 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Database.fs" />
-    <Compile Include="Store.fs" />
     <Compile Include="Web.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -16,6 +14,10 @@
     <PackageReference Include="Giraffe" Version="6.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Thoth.Json.Giraffe" Version="6.0.0-beta-001" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataAccess\DataAccess.fsproj" />
   </ItemGroup>
 
 </Project>
