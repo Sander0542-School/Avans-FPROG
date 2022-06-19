@@ -34,9 +34,10 @@ module Validator =
             Error(ValidationError $"{value} is not greater than {than}")
 
     let validateMinLength (length: int) (str: string) : Result<string, ValidationError> =
-        match (validateGreaterThan length (String.length str)) with
-        | Error _ -> Error(ValidationError $"Must be at least {length} characters")
-        | Ok _ -> Ok str
+        if String.length str < length then
+            Error(ValidationError $"Must be at least {length} characters")
+        else
+            Ok str
 
     let validateListContains (item: 'a) (list: seq<'a>) : Result<'a, ValidationError> =
         if Seq.contains item list then
@@ -56,7 +57,7 @@ module Validator =
         else
             Error(ValidationError $"{str} does not contain {subStr}")
 
-    let validateNonEmpty = validateMinLength 0
+    let validateNonEmpty = validateMinLength 1
 
 module PinValidation =
     let validateNonEmptyName (pin: Pin) : Result<Pin, ValidationError> =
@@ -151,13 +152,13 @@ module UserValidation =
         | Error _ -> Error(ValidationError "The password needs to be at least 10 characters long")
 
     let validatePasswordHasDigit (user: User) : Result<User, ValidationError> =
-        if String.forall Char.IsDigit user.Password then
+        if String.exists Char.IsDigit user.Password then
             Ok user
         else
             Error(ValidationError "The password needs to contains a digit")
 
     let validatePasswordHasUppercaseLetter (user: User) : Result<User, ValidationError> =
-        if String.forall Char.IsUpper user.Password then
+        if String.exists Char.IsUpper user.Password then
             Ok user
         else
             Error(ValidationError "The password needs to contains an uppercase letter")
