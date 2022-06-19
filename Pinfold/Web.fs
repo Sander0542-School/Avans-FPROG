@@ -26,7 +26,7 @@ let getPinneries: HttpHandler =
                       Location = loc
                       Pins = List.ofSeq pins })
 
-            return! ThothSerializer.RespondJsonSeq pinneries Pinnery.encode next ctx
+            return! ThothSerializer.RespondJsonSeq pinneries Serialization.encodePinnery next ctx
         }
 
 let getPinnery (pinneryName: string) : HttpHandler =
@@ -48,14 +48,14 @@ let getPinnery (pinneryName: string) : HttpHandler =
             return!
                 match pinnery with
                 | None -> RequestErrors.NOT_FOUND "Pinnery not found!" next ctx
-                | Some pinnery -> ThothSerializer.RespondJson pinnery Pinnery.encode next ctx
+                | Some pinnery -> ThothSerializer.RespondJson pinnery Serialization.encodePinnery next ctx
         }
 
 let addPinTo (pinneryName: string) : HttpHandler =
     fun next ctx ->
         task {
 
-            let! decodedPin = ThothSerializer.ReadBody ctx Pin.decode
+            let! decodedPin = ThothSerializer.ReadBody ctx Serialization.decodePin
 
             match decodedPin with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
@@ -86,7 +86,7 @@ let pinsFor (pinneryName: string) : HttpHandler =
                 InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
                 |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
 
-            return! ThothSerializer.RespondJsonSeq pins Pin.encode next ctx
+            return! ThothSerializer.RespondJsonSeq pins Serialization.encodePin next ctx
 
         }
 
