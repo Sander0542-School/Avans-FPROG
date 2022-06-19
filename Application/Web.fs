@@ -1,6 +1,5 @@
 module Pinfold.Web
 
-open System
 open Pinfold
 open Pinfold.Database
 open Pinfold.Store
@@ -55,7 +54,6 @@ let getPinnery (pinneryName: string) : HttpHandler =
 let addPinTo (pinneryName: string) : HttpHandler =
     fun next ctx ->
         task {
-
             let! decodedPin = ThothSerializer.ReadBody ctx Serialization.decodePin
 
             match decodedPin with
@@ -88,7 +86,6 @@ let pinsFor (pinneryName: string) : HttpHandler =
                 |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
 
             return! ThothSerializer.RespondJsonSeq pins Serialization.encodePin next ctx
-
         }
 
 
@@ -126,10 +123,6 @@ let updateValueForPin (pinneryName: string) (pinName: string) : HttpHandler =
                     InMemoryDatabase.update pinName (pinName, newValue, pinneryName) store.pins
                     return! text "OK!" next ctx
         }
-
-
-
-
 
 let routes: HttpHandler =
     let pinneryRoutes pinneryName =
