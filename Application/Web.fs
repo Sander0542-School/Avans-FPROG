@@ -170,6 +170,41 @@ let addUser: HttpHandler =
                     return! text "OK" next ctx
         }
 
+let updateFavPinnery: HttpHandler =
+    fun next ctx ->
+        task {
+            let! decodedUser = ThothSerializer.ReadBody ctx Serialization.decodeUser
+
+            match decodedUser with
+            | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
+            | Ok user ->
+                let store = ctx.GetService<Store>()
+
+                let pinneries =
+                    InMemoryDatabase.all store.pinneries
+                    |> Seq.map fst
+
+                let maybeUser =
+                    InMemoryDatabase.filter
+                        (fun (username, password, _) ->
+                            username = user.Username
+                            && password = User.hashPassword user.Password)
+                        store.users
+                    |> Seq.tryHead
+
+                match maybeUser with
+                | None -> return! RequestErrors.NOT_FOUND "User not found" next ctx
+                | Some (username, password, _) ->
+                    let pinneryValidation =
+                        UserValidation.validatePinneryExists pinneries user
+
+                    match pinneryValidation with
+                    | Error (ValidationError error) -> return! RequestErrors.NOT_FOUND error next ctx
+                    | Ok _ ->
+                        InMemoryDatabase.update username (username, password, user.Pinnery) store.users
+                        return! text "OK!" next ctx
+        }
+
 let routes: HttpHandler =
     let pinneryRoutes pinneryName =
         choose [ GET
@@ -182,7 +217,8 @@ let routes: HttpHandler =
 
     let userRoutes =
         choose [ GET >=> getUsers
-                 POST >=> addUser ]
+                 POST >=> addUser
+                 PUT >=> updateFavPinnery ]
 
     choose [ subRoute "/user" userRoutes
              subRoutef "/%s" pinneryRoutes
