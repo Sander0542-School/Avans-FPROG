@@ -155,11 +155,11 @@ module UserValidation =
         else
             Error(ValidationError "The password needs to contains a digit")
 
-    let validatePasswordHasLetter (user: User) : Result<User, ValidationError> =
-        if String.forall Char.IsLetter user.Password then
+    let validatePasswordHasUppercaseLetter (user: User) : Result<User, ValidationError> =
+        if String.forall Char.IsUpper user.Password then
             Ok user
         else
-            Error(ValidationError "The password needs to contains a letter")
+            Error(ValidationError "The password needs to contains an uppercase letter")
 
 let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, seq<string>> =
     Validator.Multiple(
@@ -187,5 +187,5 @@ let validateUser (users: seq<User>) (user: User) : Result<User, seq<string>> =
         UserValidation.validatePasswordNoIllegalWords,
         UserValidation.validatePasswordLength,
         UserValidation.validatePasswordHasDigit,
-        UserValidation.validatePasswordHasLetter
+        UserValidation.validatePasswordHasUppercaseLetter
     )
