@@ -5,6 +5,7 @@ open Pinfold
 open Pinfold.Database
 open Pinfold.Store
 open Giraffe
+open Pinfold.Validation
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 
@@ -66,7 +67,7 @@ let addPinTo (pinneryName: string) : HttpHandler =
                     InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
                     |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
 
-                match (Pin.validate otherPins pin) with
+                match (validatePin otherPins pin) with
                 | Error error ->
                     let (ValidationError errorMessage) = error
                     return! RequestErrors.BAD_REQUEST errorMessage next ctx

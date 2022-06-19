@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Service", "Service\Service.
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DataAccess", "DataAccess\DataAccess.fsproj", "{FA06EF41-602F-4B23-ADD6-FF6EEB57540D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Application", "Application\Application.fsproj", "{37A741F6-5260-4BAC-8CCD-1A13F3F7490E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{FA06EF41-602F-4B23-ADD6-FF6EEB57540D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA06EF41-602F-4B23-ADD6-FF6EEB57540D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA06EF41-602F-4B23-ADD6-FF6EEB57540D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37A741F6-5260-4BAC-8CCD-1A13F3F7490E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37A741F6-5260-4BAC-8CCD-1A13F3F7490E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37A741F6-5260-4BAC-8CCD-1A13F3F7490E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37A741F6-5260-4BAC-8CCD-1A13F3F7490E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
