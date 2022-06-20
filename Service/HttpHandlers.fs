@@ -1,14 +1,8 @@
-module Pinfold.Web
+module Pinfold.HttpHandlers
 
-open Pinfold
-open Pinfold.Database
-open Pinfold.Store
 open Giraffe
-open Pinfold.Validation
-open Thoth.Json.Net
-open Thoth.Json.Giraffe
-
-
+open Pinfold.Web.Users
+open Pinfold.Web.Pinneries
 
 let routes: HttpHandler =
     let pinneryRoutes pinneryName =
