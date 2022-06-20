@@ -7,10 +7,13 @@
 
     <ItemGroup>
       <Compile Include="Serialization.fs" />
+      <Compile Include="Web\Pinneries.fs" />
+      <Compile Include="Web\Users.fs" />
+      <Compile Include="HttpHandlers.fs" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Model\Model.fsproj" />
+      <ProjectReference Include="..\Application\Application.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
