@@ -45,9 +45,10 @@ let decodeUserRaw (usernameEmailRaw: UsernameEmail) : Decoder<User> =
         | Username _ -> "username", (Decode.string |> Decode.map Username)
 
     Decode.object (fun get ->
-        { UsernameEmail = get.Required.Field field decoder
-          Password = get.Required.Field "password" Decode.string
-          Pinnery = get.Optional.Field "pinnery" Decode.string })
+        User.make
+            (get.Required.Field field decoder)
+            (get.Required.Field "password" Decode.string)
+            (get.Optional.Field "pinnery" Decode.string)
 
 let decodeUser: Decoder<User> =
     Decode.oneOf [ decodeUserRaw (Email "")

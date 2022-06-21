@@ -6,6 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Include="Validators.fs" />
+      <Compile Include="UsernameEmail.fs" />
+      <Compile Include="Password.fs" />
       <Compile Include="Pin.fs" />
       <Compile Include="Pinnery.fs" />
       <Compile Include="User.fs" />
