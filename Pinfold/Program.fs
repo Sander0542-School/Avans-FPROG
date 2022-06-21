@@ -4,6 +4,12 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open Pinfold.DataAccess.Store
+open Pinfold.DataAccess.UserStore
+open Pinfold.DataAccess.PinneryStore
+open Pinfold.DataAccess.PinStore
+open Pinfold.Application.UserStore
+open Pinfold.Application.PinneryStore
+open Pinfold.Application.PinStore
 open Thoth.Json.Giraffe
 open Thoth.Json.Net
 open Pinfold
@@ -17,6 +23,9 @@ let configureServices (services: IServiceCollection) =
     services
         .AddGiraffe()
         .AddSingleton<Store>(Store())
+        .AddSingleton<IUserStore, UserStore>()
+        .AddSingleton<IPinneryStore, PinneryStore>()
+        .AddSingleton<IPinStore, PinStore>()
         .AddSingleton<Json.ISerializer>(ThothSerializer(skipNullField = false, caseStrategy = CaseStrategy.CamelCase))
     |> ignore
 
