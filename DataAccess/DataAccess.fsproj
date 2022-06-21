@@ -10,6 +10,7 @@
       <Compile Include="Store.fs" />
       <Compile Include="PinneryStore.fs" />
       <Compile Include="PinStore.fs" />
+      <Compile Include="UserStore.fs" />
     </ItemGroup>
 
     <ItemGroup>
