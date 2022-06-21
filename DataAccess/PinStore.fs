@@ -29,7 +29,7 @@ type PinStore(store: Store) =
 
         member this.insert (pinnery: Pinnery) (pin: Pin) =
             let result =
-                InMemoryDatabase.insert pin.Name (pinnery.Name, pin.Value, pinnery.Name) pinStore
+                InMemoryDatabase.insert pin.Name (pin.Name, pin.Value, pinnery.Name) pinStore
 
             match result with
             | Ok _ -> true
