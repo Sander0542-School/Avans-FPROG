@@ -1,4 +1,4 @@
-﻿namespace Pinfold
+﻿namespace Pinfold.Model
 
 type User =
     { Username: string

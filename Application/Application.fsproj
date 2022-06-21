@@ -6,7 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="Database.fs" />
       <Compile Include="Store.fs" />
     </ItemGroup>
 

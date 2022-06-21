@@ -1,5 +1,6 @@
 ﻿module Pinfold.Serialization
 
+open Pinfold.Model
 open Thoth.Json.Net
 
 let encodePin: Encoder<Pin> =

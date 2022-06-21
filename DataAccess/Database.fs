@@ -1,4 +1,4 @@
-namespace Pinfold.Database
+namespace Pinfold.DataAccess.Database
 
 type InsertError = UniquenessError of string
 

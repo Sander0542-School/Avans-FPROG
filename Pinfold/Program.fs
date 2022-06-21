@@ -3,10 +3,10 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
+open Pinfold.DataAccess.Store
 open Thoth.Json.Giraffe
 open Thoth.Json.Net
 open Pinfold
-open Pinfold.Store
 
 let configureApp (app: IApplicationBuilder) =
     // Add Giraffe to the ASP.NET Core pipeline
@@ -16,7 +16,7 @@ let configureServices (services: IServiceCollection) =
     // Add Giraffe dependencies
     services
         .AddGiraffe()
-        .AddSingleton<IStore>(Store())
+        .AddSingleton<Store>(Store())
         .AddSingleton<Json.ISerializer>(ThothSerializer(skipNullField = false, caseStrategy = CaseStrategy.CamelCase))
     |> ignore
 
