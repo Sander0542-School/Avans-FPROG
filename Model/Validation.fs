@@ -2,7 +2,7 @@
 
 open System
 open Microsoft.FSharp.Core
-open Pinfold
+open Pinfold.Model
 
 type ValidationError = ValidationError of string
 
@@ -53,7 +53,7 @@ module Validator =
             Error(ValidationError "The list does not contain the given item")
 
     let validateContainsSubstring (str: string) (subStr: string) : Result<string, ValidationError> =
-        if (str.Contains(subStr)) then
+        if str.Contains(subStr) then
             Ok str
         else
             Error(ValidationError $"{str} does not contain {subStr}")
@@ -75,7 +75,7 @@ module PinValidation =
         | Ok _ -> Error(ValidationError "The name is not unique")
 
     let validateValueAboveZero (pin: Pin) : Result<Pin, ValidationError> =
-        match (Validator.validateGreaterThan 0 pin.Value) with
+        match (Validator.validateGreaterThan 0m pin.Value) with
         | Error _ -> Error(ValidationError "The value needs to be bigger than zero")
         | Ok _ -> Ok pin
 
@@ -163,7 +163,7 @@ module UserValidation =
             Ok user
         else
             Error(ValidationError "The password needs to contains an uppercase letter")
-            
+
     let validatePinneryExists (pinneries: seq<string>) (user: User) : Result<User, ValidationError> =
         match user.Pinnery with
         | None -> Ok user
@@ -171,7 +171,7 @@ module UserValidation =
             match Validator.validateListContains pinneryStr pinneries with
             | Ok _ -> Ok user
             | Error _ -> Error(ValidationError "The pinnery does not exist")
-        
+
 
 let validatePin (pins: seq<Pin>) (pin: Pin) : Result<Pin, seq<string>> =
     Validator.Multiple(
