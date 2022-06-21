@@ -1,7 +1,11 @@
 ﻿namespace Pinfold.Model
 
+type UsernameEmail =
+    | Email of string
+    | Username of string
+
 type User =
-    { Username: string
+    { UsernameEmail: UsernameEmail
       Password: string
       Pinnery: Option<string> }
 

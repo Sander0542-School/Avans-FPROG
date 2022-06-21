@@ -123,26 +123,56 @@ module UserValidation =
         | Error _ -> Ok user
         | Ok _ -> Error(ValidationError errorMessage)
 
-    let validateUsernameNotEmpty (user: User) : Result<User, ValidationError> =
-        match (Validator.validateNonEmpty user.Username) with
-        | Error _ -> Error(ValidationError "The name cannot be empty")
-        | Ok _ -> Ok user
+    let validateUsernameEmailLength (user: User) : Result<User, ValidationError> =
+        match user.UsernameEmail with
+        | Username username ->
+            match (Validator.validateNonEmpty (username)) with
+            | Error _ -> Error(ValidationError "The username cannot be empty")
+            | Ok _ -> Ok user
+        | Email email ->
+            match (Validator.validateMinLength 3 email) with
+            | Error _ -> Error(ValidationError "The email must be at least 3 characters")
+            | Ok _ -> Ok user
 
     let validateUsernameNoSpaces (user: User) : Result<User, ValidationError> =
-        match (Validator.validateContainsSubstring user.Username " ") with
-        | Error _ -> Ok user
-        | Ok _ -> Error(ValidationError "The username cannot contains any spaces")
+        match user.UsernameEmail with
+        | Email _ -> Ok user
+        | Username username ->
+            match (Validator.validateContainsSubstring username " ") with
+            | Error _ -> Ok user
+            | Ok _ -> Error(ValidationError "The username cannot contains any spaces")
 
     let validateUsernameNoIllegalWords (user: User) =
-        validateNoIllegalWords (fun (user: User) -> user.Username) "The username cannot contain illegal words" user
+        match user.UsernameEmail with
+        | Email _ -> Ok user
+        | Username username ->
+            validateNoIllegalWords (fun (user: User) -> username) "The username cannot contain illegal words" user
 
     let validateUsernameUnique (users: seq<User>) (user: User) : Result<User, ValidationError> =
         let predicate =
-            fun (user1: User) -> user.Username = user1.Username
+            fun (user1: User) -> user.UsernameEmail = user1.UsernameEmail
 
         match (Validator.validateListExists predicate users) with
         | Error _ -> Ok user
         | Ok _ -> Error(ValidationError "The username is already used")
+
+    let validateEmailContainsAt (user: User) : Result<User, ValidationError> =
+        match user.UsernameEmail with
+        | Username _ -> Ok user
+        | Email email ->
+            match (Validator.validateContainsSubstring email "@") with
+            | Error _ -> Error(ValidationError "The email must contain an @")
+            | Ok _ -> Ok user
+
+    let validateEmailAtNotBeginOrEnd (user: User) : Result<User, ValidationError> =
+        match user.UsernameEmail with
+        | Username _ -> Ok user
+        | Email email ->
+            if email.IndexOf "@" = 0
+               || email.IndexOf "@" = email.Length - 1 then
+                Error(ValidationError "The email must not start or end with an @")
+            else
+                Ok user
 
     let validatePasswordNoIllegalWords (user: User) =
         validateNoIllegalWords (fun (user: User) -> user.Password) "The password cannot contain illegal words" user
@@ -192,10 +222,12 @@ let validatePinnery (pinneries: seq<Pinnery>) (pinnery: Pinnery) : Result<Pinner
 let validateUser (users: seq<User>) (pinneries: seq<string>) (user: User) : Result<User, seq<string>> =
     Validator.Multiple(
         user,
-        UserValidation.validateUsernameNotEmpty,
+        UserValidation.validateUsernameEmailLength,
         UserValidation.validateUsernameNoSpaces,
         UserValidation.validateUsernameNoIllegalWords,
         (UserValidation.validateUsernameUnique users),
+        UserValidation.validateEmailContainsAt,
+        UserValidation.validateEmailAtNotBeginOrEnd,
         UserValidation.validatePasswordNoIllegalWords,
         UserValidation.validatePasswordLength,
         UserValidation.validatePasswordHasDigit,

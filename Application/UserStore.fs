@@ -5,9 +5,9 @@ open Pinfold.Model
 type IUserStore =
     abstract all: seq<User>
 
-    abstract get: string -> Option<User>
+    abstract get: UsernameEmail -> Option<User>
 
-    abstract login: string -> string -> Option<User>
+    abstract login: UsernameEmail -> string -> Option<User>
 
     abstract insert: User -> bool
 

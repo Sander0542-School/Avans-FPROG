@@ -8,8 +8,8 @@ open Pinfold.Model
 type UserStore(store: Store) =
     let userStore = store.users
 
-    let mapUser ((username, password, pinnery): string * string * Option<string>) : User =
-        { User.Username = username
+    let mapUser ((usernameEmail, password, pinnery): UsernameEmail * string * Option<string>) : User =
+        { User.UsernameEmail = usernameEmail
           Password = password
           Pinnery = pinnery }
 
@@ -17,22 +17,22 @@ type UserStore(store: Store) =
         member this.all =
             InMemoryDatabase.all userStore |> Seq.map mapUser
 
-        member this.get(username: string) =
-            InMemoryDatabase.lookup username userStore
+        member this.get(usernameEmail: UsernameEmail) =
+            InMemoryDatabase.lookup usernameEmail userStore
             |> Option.map mapUser
 
-        member this.login (username: string) (password: string) =
-            InMemoryDatabase.filter (fun (dbUsername, dbPassword, _) -> dbUsername = username && dbPassword = User.hashPassword password) userStore
+        member this.login (usernameEmail: UsernameEmail) (password: string) =
+            InMemoryDatabase.filter (fun (dbUsername, dbPassword, _) -> dbUsername = usernameEmail && dbPassword = User.hashPassword password) userStore
             |> Seq.tryHead
             |> Option.map mapUser
 
         member this.insert(user: User) =
             let result =
-                InMemoryDatabase.insert user.Username (user.Username, user.Password, user.Pinnery) userStore
+                InMemoryDatabase.insert user.UsernameEmail (user.UsernameEmail, user.Password, user.Pinnery) userStore
 
             match result with
             | Ok _ -> true
             | Error _ -> false
 
         member this.update (user: User) (newUser: User) =
-            InMemoryDatabase.update user.Username (newUser.Username, newUser.Password, newUser.Pinnery) userStore
+            InMemoryDatabase.update user.UsernameEmail (newUser.UsernameEmail, newUser.Password, newUser.Pinnery) userStore

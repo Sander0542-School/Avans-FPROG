@@ -10,7 +10,7 @@ let encodePin: Encoder<Pin> =
 
 let decodePin: Decoder<Pin> =
     Decode.object (fun get ->
-        { Name = get.Required.Field "name" Decode.string
+        { Pin.Name = get.Required.Field "name" Decode.string
           Value = get.Required.Field "value" Decode.decimal })
 
 let encodePinnery: Encoder<Pinnery> =
@@ -24,17 +24,31 @@ let encodePinnery: Encoder<Pinnery> =
 
 let decodePinnery: Decoder<Pinnery> =
     Decode.object (fun get ->
-        { Name = get.Required.Field "name" Decode.string
+        { Pinnery.Name = get.Required.Field "name" Decode.string
           Location = get.Required.Field "value" Decode.string
           Pins = get.Required.Field "pins" (Decode.list decodePin) })
 
 let encodeUser: Encoder<User> =
     fun user ->
-        Encode.object ["username", Encode.string user.Username
-                       "pinnery", Encode.option Encode.string user.Pinnery ]
+        let usernameEmail =
+            match user.UsernameEmail with
+            | Email email -> "email", Encode.string email
+            | Username username -> "username", Encode.string username
 
-let decodeUser: Decoder<User> =
+        Encode.object [ "pinnery", Encode.option Encode.string user.Pinnery
+                        usernameEmail ]
+
+let decodeUserRaw (usernameEmailRaw: UsernameEmail) : Decoder<User> =
+    let field, decoder =
+        match usernameEmailRaw with
+        | Email _ -> "email", (Decode.string |> Decode.map Email)
+        | Username _ -> "username", (Decode.string |> Decode.map Username)
+
     Decode.object (fun get ->
-        { Username = get.Required.Field "username" Decode.string
+        { UsernameEmail = get.Required.Field field decoder
           Password = get.Required.Field "password" Decode.string
           Pinnery = get.Optional.Field "pinnery" Decode.string })
+
+let decodeUser: Decoder<User> =
+    Decode.oneOf [ decodeUserRaw (Email "")
+                   decodeUserRaw (Username "") ]

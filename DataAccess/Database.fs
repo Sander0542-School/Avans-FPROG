@@ -14,7 +14,7 @@ module InMemoryDatabase =
 
     let insert key value store : Result<unit, InsertError> =
         if Map.containsKey key store.Data then
-            sprintf "Key %s taken" key
+            $"Key {key} taken"
             |> UniquenessError
             |> Error
         else

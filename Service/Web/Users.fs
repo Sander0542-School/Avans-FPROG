@@ -62,7 +62,7 @@ let updateFavPinnery: HttpHandler =
                 let userStore = ctx.GetService<IUserStore>()
 
                 let maybeUser =
-                    userStore.login updatedUser.Username updatedUser.Password
+                    userStore.login updatedUser.UsernameEmail updatedUser.Password
 
                 match maybeUser with
                 | None -> return! RequestErrors.NOT_FOUND "User not found" next ctx
