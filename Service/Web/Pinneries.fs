@@ -1,8 +1,8 @@
 ﻿module Pinfold.Web.Pinneries
 
 open Pinfold
-open Pinfold.Store
-open Pinfold.Database
+open Pinfold.Application.PinneryStore
+open Pinfold.Application.PinStore
 open Giraffe
 open Pinfold.Validation
 open Thoth.Json.Net
@@ -11,19 +11,10 @@ open Thoth.Json.Giraffe
 let getPinneries: HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let pinneryStore =
+                ctx.GetService<IPinneryStore>()
 
-            let pinneries =
-                InMemoryDatabase.all store.pinneries
-                |> Seq.map (fun (name, loc) ->
-                    // find pins for this pinnery
-                    let pins =
-                        InMemoryDatabase.filter (fun (_, _, p) -> p = name) store.pins
-                        |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
-
-                    { Name = name
-                      Location = loc
-                      Pins = List.ofSeq pins })
+            let pinneries = pinneryStore.all
 
             return! ThothSerializer.RespondJsonSeq pinneries Serialization.encodePinnery next ctx
         }
@@ -31,23 +22,14 @@ let getPinneries: HttpHandler =
 let getPinnery (pinneryName: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let pinneryStore =
+                ctx.GetService<IPinneryStore>()
 
-            let pinnery =
-                InMemoryDatabase.lookup pinneryName store.pinneries
-                |> Option.map (fun (_, loc) ->
-                    let pins =
-                        InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
-                        |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
+            let pinnery = pinneryStore.get pinneryName
 
-                    { Name = pinneryName
-                      Location = loc
-                      Pins = List.ofSeq pins })
-
-            return!
-                match pinnery with
-                | None -> RequestErrors.NOT_FOUND "Pinnery not found!" next ctx
-                | Some pinnery -> ThothSerializer.RespondJson pinnery Serialization.encodePinnery next ctx
+            match pinnery with
+            | None -> return! RequestErrors.NOT_FOUND "Pinnery not found!" next ctx
+            | Some pinnery -> return! ThothSerializer.RespondJson pinnery Serialization.encodePinnery next ctx
         }
 
 let addPinTo (pinneryName: string) : HttpHandler =
@@ -58,65 +40,89 @@ let addPinTo (pinneryName: string) : HttpHandler =
             match decodedPin with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
             | Ok pin ->
-                let store = ctx.GetService<IStore>()
+                let pinneryStore =
+                    ctx.GetService<IPinneryStore>()
 
-                let otherPins =
-                    InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
-                    |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
+                let maybePinnery =
+                    pinneryStore.get pinneryName
 
-                match (validatePin otherPins pin) with
-                | Error errors -> return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
-                | Ok validPin ->
-                    InMemoryDatabase.insert validPin.Name (validPin.Name, validPin.Value, pinneryName) store.pins
-                    |> ignore
+                match maybePinnery with
+                | None -> return! RequestErrors.NOT_FOUND "Pinnery not found!" next ctx
+                | Some pinnery ->
+                    let pinStore = ctx.GetService<IPinStore>()
 
-                    return! text "OK" next ctx
+                    let otherPins = pinStore.all
+
+                    match (validatePin otherPins pin) with
+                    | Error errors -> return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
+                    | Ok validPin ->
+                        match pinStore.insert pinnery validPin with
+                        | true -> return! text "OK" next ctx
+                        | false -> return! ServerErrors.INTERNAL_ERROR "Failed" next ctx
         }
 
 let pinsFor (pinneryName: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let pinneryStore =
+                ctx.GetService<IPinneryStore>()
 
-            let pins =
-                InMemoryDatabase.filter (fun (_, _, p) -> p = pinneryName) store.pins
-                |> Seq.map (fun (name, value, _) -> { Pin.Name = name; Value = value })
+            let maybePinnery =
+                pinneryStore.get pinneryName
 
-            return! ThothSerializer.RespondJsonSeq pins Serialization.encodePin next ctx
+            match maybePinnery with
+            | None -> return! RequestErrors.NOT_FOUND "Pinnery not found!" next ctx
+            | Some pinnery -> return! ThothSerializer.RespondJsonSeq pinnery.Pins Serialization.encodePin next ctx
         }
 
 
 let valueForPin (pinneryName: string) (pinName: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let pinneryStore =
+                ctx.GetService<IPinneryStore>()
 
-            // First check if pin belongs to pinnery
-            let maybePin =
-                InMemoryDatabase.filter (fun (n, _, p) -> n = pinName && p = pinneryName) store.pins
-                |> Seq.tryHead
+            let maybePinnery =
+                pinneryStore.get pinneryName
 
-            match maybePin with
-            | None -> return! RequestErrors.NOT_FOUND "Pin not found" next ctx
-            | Some (_, value, _) -> return! ThothSerializer.RespondJson value Encode.decimal next ctx
+            match maybePinnery with
+            | None -> return! RequestErrors.NOT_FOUND "Pinnery not found" next ctx
+            | Some pinnery ->
+                let pinStore = ctx.GetService<IPinStore>()
+
+                let maybePin =
+                    pinStore.getWherePinnery pinnery.Name pinName
+
+                match maybePin with
+                | None -> return! RequestErrors.NOT_FOUND "Pin not found" next ctx
+                | Some pin -> return! ThothSerializer.RespondJson pin.Value Encode.decimal next ctx
         }
 
 let updateValueForPin (pinneryName: string) (pinName: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let pinneryStore =
+                ctx.GetService<IPinneryStore>()
 
-            // First check if pin belongs to pinnery
-            let maybePin =
-                InMemoryDatabase.filter (fun (n, _, p) -> n = pinName && p = pinneryName) store.pins
-                |> Seq.tryHead
+            let maybePinnery =
+                pinneryStore.get pinneryName
 
-            match maybePin with
-            | None -> return! RequestErrors.NOT_FOUND "Pin not found" next ctx
-            | Some _ ->
-                match! ThothSerializer.ReadBody ctx Decode.decimal with
-                | Error e -> return! RequestErrors.BAD_REQUEST e next ctx
-                | Ok newValue ->
-                    InMemoryDatabase.update pinName (pinName, newValue, pinneryName) store.pins
-                    return! text "OK!" next ctx
+            match maybePinnery with
+            | None -> return! RequestErrors.NOT_FOUND "Pinnery not found" next ctx
+            | Some pinnery ->
+                let pinStore = ctx.GetService<IPinStore>()
+
+                let maybePin =
+                    pinStore.getWherePinnery pinnery.Name pinName
+
+                match maybePin with
+                | None -> return! RequestErrors.NOT_FOUND "Pin not found" next ctx
+                | Some pin ->
+                    match! ThothSerializer.ReadBody ctx Decode.decimal with
+                    | Error e -> return! RequestErrors.BAD_REQUEST e next ctx
+                    | Ok newValue ->
+                        let newPin = { pin with Value = newValue }
+                        pinStore.update pinnery pin newPin
+
+                        return! text "OK" next ctx
         }
