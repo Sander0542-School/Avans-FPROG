@@ -1,23 +1,21 @@
 ﻿module Pinfold.Web.Users
 
 open Pinfold
-open Pinfold.Store
-open Pinfold.Database
+open Pinfold.Model
+open Pinfold.Application.PinneryStore
+open Pinfold.Application.UserStore
 open Giraffe
 open Pinfold.Validation
 open Thoth.Json.Giraffe
 
+let pinneryName (pinnery: Pinnery) = pinnery.Name
+
 let getUsers: HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<IStore>()
+            let userStore = ctx.GetService<IUserStore>()
 
-            let users =
-                InMemoryDatabase.all store.users
-                |> Seq.map (fun (name, _, pinnery) ->
-                    { Username = name
-                      Password = ""
-                      Pinnery = pinnery })
+            let users = userStore.all
 
             return! ThothSerializer.RespondJsonSeq users Serialization.encodeUser next ctx
         }
@@ -30,29 +28,21 @@ let addUser: HttpHandler =
             match decodedUser with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
             | Ok user ->
-                let store = ctx.GetService<IStore>()
+                let pinneryStore =
+                    ctx.GetService<IPinneryStore>()
 
-                let pinneries =
-                    InMemoryDatabase.all store.pinneries
-                    |> Seq.map fst
+                let pinneryNames =
+                    pinneryStore.all |> Seq.map pinneryName
 
-                let otherUsers =
-                    InMemoryDatabase.filter (fun (username, _, _) -> username = user.Username) store.users
-                    |> Seq.map (fun (username, _, _) ->
-                        { User.Username = username
-                          Password = ""
-                          Pinnery = None })
+                let userStore = ctx.GetService<IUserStore>()
+                let users = userStore.all
 
-                match (validateUser otherUsers pinneries user) with
+                match (validateUser users pinneryNames user) with
                 | Error errors -> return! RequestErrors.BAD_REQUEST (errors |> Seq.toArray) next ctx
                 | Ok validUser ->
-                    InMemoryDatabase.insert
-                        validUser.Username
-                        (validUser.Username, User.hashPassword validUser.Password, validUser.Pinnery)
-                        store.users
-                    |> ignore
-
-                    return! text "OK" next ctx
+                    match userStore.insert validUser with
+                    | true -> return! text "OK" next ctx
+                    | false -> return! ServerErrors.INTERNAL_ERROR "Failed" next ctx
         }
 
 let updateFavPinnery: HttpHandler =
@@ -62,30 +52,31 @@ let updateFavPinnery: HttpHandler =
 
             match decodedUser with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
-            | Ok user ->
-                let store = ctx.GetService<IStore>()
+            | Ok updatedUser ->
+                let pinneryStore =
+                    ctx.GetService<IPinneryStore>()
 
-                let pinneries =
-                    InMemoryDatabase.all store.pinneries
-                    |> Seq.map fst
+                let pinneryNames =
+                    pinneryStore.all |> Seq.map pinneryName
+
+                let userStore = ctx.GetService<IUserStore>()
 
                 let maybeUser =
-                    InMemoryDatabase.filter
-                        (fun (username, password, _) ->
-                            username = user.Username
-                            && password = User.hashPassword user.Password)
-                        store.users
-                    |> Seq.tryHead
+                    userStore.login updatedUser.Username updatedUser.Password
 
                 match maybeUser with
                 | None -> return! RequestErrors.NOT_FOUND "User not found" next ctx
-                | Some (username, password, _) ->
+                | Some user ->
                     let pinneryValidation =
-                        UserValidation.validatePinneryExists pinneries user
+                        UserValidation.validatePinneryExists pinneryNames updatedUser
 
                     match pinneryValidation with
                     | Error (ValidationError error) -> return! RequestErrors.NOT_FOUND error next ctx
                     | Ok _ ->
-                        InMemoryDatabase.update username (username, password, user.Pinnery) store.users
-                        return! text "OK!" next ctx
+                        let newUser =
+                            { user with Pinnery = updatedUser.Pinnery }
+
+                        userStore.update user newUser
+
+                        return! text "OK" next ctx
         }
